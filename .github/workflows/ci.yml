@@ -30,11 +30,11 @@ jobs:
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
-        php-version: ${{ matrix.php-versions }}
+        php-version: ${{ matrix.php }}
         coverage: pcov
 
-    - name: Composer
-    - uses: php-actions/composer@v6
+    - name: Composer Install
+      uses: php-actions/composer@v6
 
     - name: Code style checks
       run: ./vendor/bin/phpcs
