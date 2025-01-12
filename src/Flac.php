@@ -310,28 +310,16 @@ class Flac
                 $this->totalSamples = $metadataBlockData['samplerate_channels_bitrate_samples'] & 68719476735;
                 $this->duration = $this->totalSamples / $this->sampleRate;
                 $this->audioMd5 = $metadataBlockData['md5'];
-            }
-
-            // Padding
-            elseif ($metadataBlockType === self::METADATA_BLOCK_PADDING) {
+            } elseif ($metadataBlockType === self::METADATA_BLOCK_PADDING) { // Padding
                 $this->metadataBlockCounts[self::METADATA_BLOCK_PADDING]++;
                 fseek($this->fileHandle, $metadataBlockLength, SEEK_CUR);
-            }
-
-            // Application
-            elseif ($metadataBlockType === self::METADATA_BLOCK_APPLICATION) {
+            } elseif ($metadataBlockType === self::METADATA_BLOCK_APPLICATION) { // Application
                 $this->metadataBlockCounts[self::METADATA_BLOCK_APPLICATION]++;
                 fseek($this->fileHandle, $metadataBlockLength, SEEK_CUR);
-            }
-
-            // Seektable
-            elseif ($metadataBlockType === self::METADATA_BLOCK_SEEKTABLE) {
+            } elseif ($metadataBlockType === self::METADATA_BLOCK_SEEKTABLE) { // Seektable
                 $this->metadataBlockCounts[self::METADATA_BLOCK_SEEKTABLE]++;
                 fseek($this->fileHandle, $metadataBlockLength, SEEK_CUR);
-            }
-
-            // Vorbis Comment
-            elseif ($metadataBlockType === self::METADATA_BLOCK_VORBIS_COMMENT) {
+            } elseif ($metadataBlockType === self::METADATA_BLOCK_VORBIS_COMMENT) { // Vorbis Comment
                 $this->metadataBlockCounts[self::METADATA_BLOCK_VORBIS_COMMENT]++;
                 $this->vorbisComment = [];
 
@@ -382,16 +370,10 @@ class Flac
 
                     $this->vorbisComment['comments'][$field][] = $value;
                 }
-            }
-
-            // Cuesheet
-            elseif ($metadataBlockType === self::METADATA_BLOCK_CUESHEET) {
+            } elseif ($metadataBlockType === self::METADATA_BLOCK_CUESHEET) { // Cuesheet
                 $this->metadataBlockCounts[self::METADATA_BLOCK_CUESHEET] += 1;
                 fseek($this->fileHandle, $metadataBlockLength, SEEK_CUR);
-            }
-
-            // Picture
-            elseif ($metadataBlockType === self::METADATA_BLOCK_PICTURE) {
+            } elseif ($metadataBlockType === self::METADATA_BLOCK_PICTURE) { // Picture
                 $this->metadataBlockCounts[self::METADATA_BLOCK_PICTURE] += 1;
                 fseek($this->fileHandle, $metadataBlockLength, SEEK_CUR);
             } elseif ($metadataBlockType > 126) {
