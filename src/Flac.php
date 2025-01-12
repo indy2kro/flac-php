@@ -41,9 +41,7 @@ class Flac
     public const BLOCK_SIZE_MIN = 16; // FLAC specifies a minimum block size of 16
     public const BLOCK_SIZE_MAX = 65535; // FLAC specifies a maximum block size of 65535
     public const SAMPLE_RATE_MIN = 1; // Sample rate of 0 is invalid
-    public const SAMPLE_RATE_MAX = 655350;  // The maximum sample rate is limited by the structure of frame headers to 655350Hz.
-
-    protected string $filename;
+    public const SAMPLE_RATE_MAX = 655350;
 
     protected int $fileSize;
 
@@ -111,14 +109,12 @@ class Flac
      * @throws RuntimeException if the file could not be accessed
      * @throws UnexpectedValueException if the file is no "FLAC"
      */
-    public function __construct(string $file)
+    public function __construct(protected string $filename)
     {
-        $this->filename = $file;
-
-        $fileHandle = fopen($file, 'rb');
+        $fileHandle = fopen($this->filename, 'rb');
 
         if ($fileHandle === false) {
-            throw new RuntimeException('Cannot access file "' . $file . '"', self::E_FILE_OPEN);
+            throw new RuntimeException('Cannot access file "' . $this->filename . '"', self::E_FILE_OPEN);
         }
 
         $this->fileHandle = $fileHandle;
@@ -127,10 +123,10 @@ class Flac
             throw new UnexpectedValueException('Invalid file type. File is not FLAC!', self::E_FILE_TYPE);
         }
 
-        $fileSize = filesize($file);
+        $fileSize = filesize($this->filename);
 
         if ($fileSize === false) {
-            throw new RuntimeException('Cannot get file size of "' . $file . '"', self::E_FILE_READ);
+            throw new RuntimeException('Cannot get file size of "' . $this->filename . '"', self::E_FILE_READ);
         }
 
         $this->fileSize = $fileSize;
@@ -295,7 +291,7 @@ class Flac
                     );
                 }
 
-                if (! preg_match('/^[0-9a-f]{32}$/', $metadataBlockData['md5'])) {
+                if (! preg_match('/^[0-9a-f]{32}$/', (string) $metadataBlockData['md5'])) {
                     throw new UnexpectedValueException('Invalid MD5 hash', self::E_METADATA_BLOCK_DATA);
                 }
 
