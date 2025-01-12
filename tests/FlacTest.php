@@ -15,13 +15,13 @@ class FlacTest extends TestCase
         $this->expectException(RuntimeException::class);
         new Flac('fixtures/non-existent-file');
     }
-    
+
     public function testInvalidFlac(): void
     {
         $this->expectException(RuntimeException::class);
         new Flac('fixtures/invalid.flac');
     }
-    
+
     public function testFixtures(): void
     {
         $flac = new Flac('fixtures/44100Hz-16bit-1ch.flac');
