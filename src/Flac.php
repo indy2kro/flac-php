@@ -111,6 +111,10 @@ class Flac
      */
     public function __construct(protected string $filename)
     {
+        if (file_exists($this->filename) === false) {
+            throw new RuntimeException('Faile does not exist: "' . $this->filename . '"', self::E_FILE_OPEN);
+        }
+
         $fileHandle = fopen($this->filename, 'rb');
 
         if ($fileHandle === false) {

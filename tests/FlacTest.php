@@ -6,10 +6,23 @@ namespace bluemoehre\Test;
 
 use bluemoehre\Flac;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 class FlacTest extends TestCase
 {
-    public function test(): void
+    public function testNonExistent(): void
+    {
+        $this->expectException(RuntimeException::class);
+        new Flac('fixtures/non-existent-file');
+    }
+    
+    public function testInvalidFlac(): void
+    {
+        $this->expectException(RuntimeException::class);
+        new Flac('fixtures/invalid.flac');
+    }
+    
+    public function testFixtures(): void
     {
         $flac = new Flac('fixtures/44100Hz-16bit-1ch.flac');
         $this->assertSame(67590, $flac->getFileSize(), 'Filesize should be 67.590 Bytes');
