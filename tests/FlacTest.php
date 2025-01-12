@@ -22,6 +22,33 @@ class FlacTest extends TestCase
         new Flac('fixtures/invalid.flac');
     }
 
+    public function testGetters(): void
+    {
+        $filename = 'fixtures/44100Hz-16bit-1ch.flac';
+        $flac = new Flac($filename);
+        $this->assertSame($filename, $flac->getFilename());
+        $this->assertSame(67590, $flac->getFileSize());
+        $this->assertSame([1, 0, 0, 0, 1, 0, 0], $flac->getMetadataBlockCounts());
+        $this->assertSame(4096, $flac->getStreamBlockSizeMin());
+        $this->assertSame(4096, $flac->getStreamBlockSizeMax());
+        $this->assertSame(4328, $flac->getStreamFrameSizeMin());
+        $this->assertSame(6470, $flac->getStreamFrameSizeMax());
+        $this->assertSame(44100, $flac->getSampleRate());
+        $this->assertSame(1, $flac->getChannels());
+        $this->assertSame(16, $flac->getBitsPerSample());
+        $this->assertSame(44100, $flac->getTotalSamples());
+        $this->assertEqualsWithDelta(1.0, $flac->getDuration(), PHP_FLOAT_EPSILON);
+        $this->assertSame('874465dc8789a3047d91ffd456c185cf', $flac->getAudioMd5());
+        $comments = $flac->getVorbisComment();
+        $this->assertSame(32, $comments['vendorLength']);
+        $this->assertSame('reference libFLAC 1.3.1 20141125', $comments['vendorString']);
+        $this->assertIsArray($comments['comments']);
+        $this->assertCount(3, $comments['comments']);
+        $this->assertSame(['Chirp / Square (non aliased)'], $comments['comments']['title']);
+        $this->assertSame(['2017'], $comments['comments']['date']);
+        $this->assertSame(['Generator'], $comments['comments']['artist']);
+    }
+
     public function testFixtures(): void
     {
         $flac = new Flac('fixtures/44100Hz-16bit-1ch.flac');
