@@ -54,7 +54,7 @@ jobs:
         key: ${{ runner.os }}-build-${{ matrix.php }}-${{ hashFiles('**/composer.lock') }}
 
     - name: Composer Install
-      uses: php-actions/composer@v6
+      run: composer install --no-progress
 
     - name: Code style checks
       run: ./vendor/bin/phpcs
