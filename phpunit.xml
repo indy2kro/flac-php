@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit bootstrap="vendor/autoload.php"
-         colors="true"
-         convertErrorsToExceptions="true"
-         convertNoticesToExceptions="true"
-         convertWarningsToExceptions="true"
-         stopOnFailure="true">
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.0/phpunit.xsd"
+         stopOnFailure="false"
+         bootstrap="vendor/autoload.php">
+
+    <source>
+            <include>
+                    <directory>./src/</directory>
+            </include>
+    </source>
+
     <testsuites>
         <testsuite name="bluemoehre/flac-php Test Suite">
             <directory>tests</directory>
