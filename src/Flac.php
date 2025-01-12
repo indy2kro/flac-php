@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace bluemoehre;
 
 use LogicException;
@@ -8,8 +10,11 @@ use UnexpectedValueException;
 
 /**
  * @license GNU General Public License http://www.gnu.org/licenses/licenses.html#GPL
+ *
  * @author BlueMöhre <bluemoehre@gmx.de>
+ *
  * @copyright 2012-2017 BlueMöhre
+ *
  * @link http://www.github.com/bluemoehre
  *
  * This code is based upon the really great FLAC-Project by Josh Coalson
@@ -17,129 +22,118 @@ use UnexpectedValueException;
  */
 class Flac
 {
-    const E_FILE_OPEN = 10;
-    const E_FILE_CLOSE = 11;
-    const E_FILE_READ = 12;
-    const E_FILE_TYPE = 13;
-    const E_METADATA_BLOCK = 20;
-    const E_METADATA_BLOCK_DATA = 21;
-    const E_PARAMETER = 30;
+    public const E_FILE_OPEN = 10;
+    public const E_FILE_CLOSE = 11;
+    public const E_FILE_READ = 12;
+    public const E_FILE_TYPE = 13;
+    public const E_METADATA_BLOCK = 20;
+    public const E_METADATA_BLOCK_DATA = 21;
+    public const E_PARAMETER = 30;
 
-    const METADATA_BLOCK_STREAMINFO = 0;
-    const METADATA_BLOCK_PADDING = 1;
-    const METADATA_BLOCK_APPLICATION = 2;
-    const METADATA_BLOCK_SEEKTABLE = 3;
-    const METADATA_BLOCK_VORBIS_COMMENT = 4;
-    const METADATA_BLOCK_CUESHEET = 5;
-    const METADATA_BLOCK_PICTURE = 6;
+    public const METADATA_BLOCK_STREAMINFO = 0;
+    public const METADATA_BLOCK_PADDING = 1;
+    public const METADATA_BLOCK_APPLICATION = 2;
+    public const METADATA_BLOCK_SEEKTABLE = 3;
+    public const METADATA_BLOCK_VORBIS_COMMENT = 4;
+    public const METADATA_BLOCK_CUESHEET = 5;
+    public const METADATA_BLOCK_PICTURE = 6;
 
-    const BLOCK_SIZE_MIN = 16; // FLAC specifies a minimum block size of 16
-    const BLOCK_SIZE_MAX = 65535; // FLAC specifies a maximum block size of 65535
-    const SAMPLE_RATE_MIN = 1; // Sample rate of 0 is invalid
-    const SAMPLE_RATE_MAX = 655350;  // The maximum sample rate is limited by the structure of frame headers to 655350Hz.
+    public const BLOCK_SIZE_MIN = 16; // FLAC specifies a minimum block size of 16
+    public const BLOCK_SIZE_MAX = 65535; // FLAC specifies a maximum block size of 65535
+    public const SAMPLE_RATE_MIN = 1; // Sample rate of 0 is invalid
+    public const SAMPLE_RATE_MAX = 655350;  // The maximum sample rate is limited by the structure of frame headers to 655350Hz.
 
+    protected string $filename;
 
-    /** @var string */
-    protected $filename;
-
-    /** @var int */
-    protected $fileSize;
+    protected int $fileSize;
 
     /** @var resource */
-    protected $fileHandle;
+    protected mixed $fileHandle;
 
     /**
      * Amount of metadata blocks per type
      *
-     * @var array[int]int
+     * @var array<int, int>
      */
-    protected $metadataBlockCounts = [
+    protected array $metadataBlockCounts = [
         self::METADATA_BLOCK_STREAMINFO => 0,
         self::METADATA_BLOCK_PADDING => 0,
         self::METADATA_BLOCK_APPLICATION => 0,
         self::METADATA_BLOCK_SEEKTABLE => 0,
         self::METADATA_BLOCK_VORBIS_COMMENT => 0,
         self::METADATA_BLOCK_CUESHEET => 0,
-        self::METADATA_BLOCK_PICTURE => 0
+        self::METADATA_BLOCK_PICTURE => 0,
     ];
 
     /**
      * The minimum block size (in samples) used in the stream.
-     *
-     * @var int
      */
-    protected $streamBlockSizeMin;
+    protected int $streamBlockSizeMin;
 
     /**
      * The maximum block size (in samples) used in the stream.
      * (Minimum blocksize == maximum blocksize) implies a fixed-blocksize stream.
-     *
-     * @var int
      */
-    protected $streamBlockSizeMax;
+    protected int $streamBlockSizeMax;
 
     /**
      * The minimum frame size (in bytes) used in the stream. May be 0 to imply the value is not known.
-     *
-     * @var int
      */
-    protected $streamFrameSizeMin;
+    protected int $streamFrameSizeMin;
 
     /**
      * The maximum frame size (in bytes) used in the stream. May be 0 to imply the value is not known.
-     *
-     * @var int
      */
-    protected $streamFrameSizeMax;
+    protected int $streamFrameSizeMax;
 
-    /** @var int */
-    protected $sampleRate;
+    protected int $sampleRate;
 
-    /** @var int */
-    protected $channels;
+    protected int $channels;
 
-    /** @var int */
-    protected $bitsPerSample;
+    protected int $bitsPerSample;
 
-    /** @var int */
-    protected $totalSamples;
+    protected int $totalSamples;
 
     /**
      * Total audio length in seconds
-     *
-     * @var float
      */
-    protected $duration;
+    protected float $duration;
 
     /**
      * MD5 signature of the unencoded audio data.
-     *
-     * @var string
      */
-    protected $audioMd5;
+    protected string $audioMd5;
 
-    /** @var array[string]mixed */
-    protected $vorbisComment;
-
+    /** @var array<string, mixed> */
+    protected array $vorbisComment = [];
 
     /**
-     * @param string $file
      * @throws RuntimeException if the file could not be accessed
      * @throws UnexpectedValueException if the file is no "FLAC"
      */
-    public function __construct($file)
+    public function __construct(string $file)
     {
         $this->filename = $file;
 
-        if (!$this->fileHandle = @fopen($file, 'rb')) {
+        $fileHandle = fopen($file, 'rb');
+
+        if ($fileHandle === false) {
             throw new RuntimeException('Cannot access file "' . $file . '"', self::E_FILE_OPEN);
         }
 
-        if ($this->read(4) != 'fLaC') {
+        $this->fileHandle = $fileHandle;
+
+        if ($this->read(4) !== 'fLaC') {
             throw new UnexpectedValueException('Invalid file type. File is not FLAC!', self::E_FILE_TYPE);
         }
 
-        $this->fileSize = filesize($file);
+        $fileSize = filesize($file);
+
+        if ($fileSize === false) {
+            throw new RuntimeException('Cannot get file size of "' . $file . '"', self::E_FILE_READ);
+        }
+
+        $this->fileSize = $fileSize;
         $this->fetchMetadataBlocks();
     }
 
@@ -148,28 +142,111 @@ class Flac
      */
     public function __destruct()
     {
-        if (!fclose($this->fileHandle)) {
+        $closed = fclose($this->fileHandle);
+        if ($closed === false) {
             throw new RuntimeException('Could not release file handle of "' . $this->filename . '"', self::E_FILE_CLOSE);
         }
+    }
+
+    public function getFilename(): string
+    {
+        return $this->filename;
+    }
+
+    public function getFileSize(): int
+    {
+        return $this->fileSize;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public function getMetadataBlockCounts(): array
+    {
+        return $this->metadataBlockCounts;
+    }
+
+    public function getStreamBlockSizeMin(): int
+    {
+        return $this->streamBlockSizeMin;
+    }
+
+    public function getStreamBlockSizeMax(): int
+    {
+        return $this->streamBlockSizeMax;
+    }
+
+    public function getStreamFrameSizeMin(): int
+    {
+        return $this->streamFrameSizeMin;
+    }
+
+    public function getStreamFrameSizeMax(): int
+    {
+        return $this->streamFrameSizeMax;
+    }
+
+    public function getSampleRate(): int
+    {
+        return $this->sampleRate;
+    }
+
+    public function getChannels(): int
+    {
+        return $this->channels;
+    }
+
+    public function getBitsPerSample(): int
+    {
+        return $this->bitsPerSample;
+    }
+
+    public function getTotalSamples(): int
+    {
+        return $this->totalSamples;
+    }
+
+    /**
+     * Audio length in seconds
+     */
+    public function getDuration(): float
+    {
+        return $this->duration;
+    }
+
+    public function getAudioMd5(): string
+    {
+        return $this->audioMd5;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getVorbisComment(): array
+    {
+        return $this->vorbisComment;
     }
 
     /**
      * Fetches all metadata
      */
-    protected function fetchMetadataBlocks()
+    protected function fetchMetadataBlocks(): void
     {
         $isLastMetadataBlock = false;
-        $this->audioMd5;
 
-        while (!$isLastMetadataBlock && !feof($this->fileHandle)) {
+        while (! $isLastMetadataBlock && ! feof($this->fileHandle)) {
             $metadataBlockHeader = unpack('nlast_type/X/X/Nlength', $this->read(4));
-            $isLastMetadataBlock = (bool)($metadataBlockHeader['last_type'] >> 15); // the first bit defines if this is the last meta block
+
+            if ($metadataBlockHeader === false) {
+                throw new UnexpectedValueException('Failed to read metadata block header', self::E_METADATA_BLOCK);
+            }
+
+            $isLastMetadataBlock = (bool) ($metadataBlockHeader['last_type'] >> 15); // the first bit defines if this is the last meta block
             $metadataBlockType = $metadataBlockHeader['last_type'] >> 8 & 127; // bits 2-8 (7bit) of 16 define the block type
             $metadataBlockLength = $metadataBlockHeader['length'] & 16777215; // bits 9-32 (24bit) of 32 define block length
 
             // Streaminfo
-            if ($metadataBlockType == self::METADATA_BLOCK_STREAMINFO) {
-
+            if ($metadataBlockType === self::METADATA_BLOCK_STREAMINFO) {
                 if (array_sum($this->metadataBlockCounts) > 0) {
                     throw new UnexpectedValueException('METADATA_BLOCK_STREAMINFO must be the first metadata block', self::E_METADATA_BLOCK);
                 }
@@ -182,6 +259,11 @@ class Flac
                     'nminBlockSize/nmaxBlockSize/NminFrameSize/X/NmaxFrameSize/X/N2samplerate_channels_bitrate_samples/H32md5',
                     $this->read($metadataBlockLength)
                 );
+
+                if ($metadataBlockData === false) {
+                    throw new UnexpectedValueException('Failed to read metadata block data', self::E_METADATA_BLOCK);
+                }
+
                 $metadataBlockData['samplerate_channels_bitrate_samples'] = $metadataBlockData['samplerate_channels_bitrate_samples1'] << 32 | $metadataBlockData['samplerate_channels_bitrate_samples2'];
                 $sampleRate = $metadataBlockData['samplerate_channels_bitrate_samples'] >> 44;
 
@@ -213,7 +295,7 @@ class Flac
                     );
                 }
 
-                if (!preg_match('/^[0-9a-f]{32}$/', $metadataBlockData['md5'])) {
+                if (! preg_match('/^[0-9a-f]{32}$/', $metadataBlockData['md5'])) {
                     throw new UnexpectedValueException('Invalid MD5 hash', self::E_METADATA_BLOCK_DATA);
                 }
 
@@ -231,25 +313,25 @@ class Flac
             }
 
             // Padding
-            elseif ($metadataBlockType == self::METADATA_BLOCK_PADDING) {
+            elseif ($metadataBlockType === self::METADATA_BLOCK_PADDING) {
                 $this->metadataBlockCounts[self::METADATA_BLOCK_PADDING]++;
                 fseek($this->fileHandle, $metadataBlockLength, SEEK_CUR);
             }
 
             // Application
-            elseif ($metadataBlockType == self::METADATA_BLOCK_APPLICATION) {
+            elseif ($metadataBlockType === self::METADATA_BLOCK_APPLICATION) {
                 $this->metadataBlockCounts[self::METADATA_BLOCK_APPLICATION]++;
                 fseek($this->fileHandle, $metadataBlockLength, SEEK_CUR);
             }
 
             // Seektable
-            elseif ($metadataBlockType == self::METADATA_BLOCK_SEEKTABLE) {
+            elseif ($metadataBlockType === self::METADATA_BLOCK_SEEKTABLE) {
                 $this->metadataBlockCounts[self::METADATA_BLOCK_SEEKTABLE]++;
                 fseek($this->fileHandle, $metadataBlockLength, SEEK_CUR);
             }
 
             // Vorbis Comment
-            elseif ($metadataBlockType == self::METADATA_BLOCK_VORBIS_COMMENT) {
+            elseif ($metadataBlockType === self::METADATA_BLOCK_VORBIS_COMMENT) {
                 $this->metadataBlockCounts[self::METADATA_BLOCK_VORBIS_COMMENT]++;
                 $this->vorbisComment = [];
 
@@ -257,6 +339,11 @@ class Flac
                 $rawPosition = 0;
 
                 $metadataBlockData = unpack('V', substr($metadataBlockRaw, $rawPosition, 4));
+
+                if ($metadataBlockData === false) {
+                    throw new UnexpectedValueException('Failed to read Vorbis block data', self::E_METADATA_BLOCK);
+                }
+
                 $this->vorbisComment['vendorLength'] = $metadataBlockData[1];
                 $rawPosition += 4;
 
@@ -264,18 +351,29 @@ class Flac
                 $rawPosition += $this->vorbisComment['vendorLength'];
 
                 $metadataBlockData = unpack('V', substr($metadataBlockRaw, $rawPosition, 4));
+
+                if ($metadataBlockData === false) {
+                    throw new UnexpectedValueException('Failed to read Vorbis block data', self::E_METADATA_BLOCK);
+                }
+
                 $commentsLength = $metadataBlockData[1];
                 $rawPosition += 4;
 
                 for ($i = 0; $i < $commentsLength; $i++) {
                     $metadataBlockData = unpack('V', substr($metadataBlockRaw, $rawPosition, 4));
+
+                    if ($metadataBlockData === false) {
+                        throw new UnexpectedValueException('Failed to read Vorbis block raw comments', self::E_METADATA_BLOCK);
+                    }
+
                     $commentSize = $metadataBlockData[1];
                     $rawPosition += 4;
 
                     $comment = substr($metadataBlockRaw, $rawPosition, $commentSize);
                     $rawPosition += $commentSize;
 
-                    if (!$delimiterPosition = strpos($comment, '=')) {
+                    $delimiterPosition = strpos($comment, '=');
+                    if ($delimiterPosition === false) {
                         throw new UnexpectedValueException('Vorbis comment must contain "=" as delimiter', self::E_METADATA_BLOCK_DATA);
                     }
 
@@ -287,159 +385,42 @@ class Flac
             }
 
             // Cuesheet
-            elseif ($metadataBlockType == self::METADATA_BLOCK_CUESHEET) {
+            elseif ($metadataBlockType === self::METADATA_BLOCK_CUESHEET) {
                 $this->metadataBlockCounts[self::METADATA_BLOCK_CUESHEET] += 1;
                 fseek($this->fileHandle, $metadataBlockLength, SEEK_CUR);
             }
 
             // Picture
-            elseif ($metadataBlockType == self::METADATA_BLOCK_PICTURE) {
+            elseif ($metadataBlockType === self::METADATA_BLOCK_PICTURE) {
                 $this->metadataBlockCounts[self::METADATA_BLOCK_PICTURE] += 1;
                 fseek($this->fileHandle, $metadataBlockLength, SEEK_CUR);
-            }
-
-            elseif ($metadataBlockType > 126) {
+            } elseif ($metadataBlockType > 126) {
                 throw new UnexpectedValueException(
                     sprintf('Invalid metadata block type: %d', $metadataBlockType),
                     self::E_METADATA_BLOCK
                 );
             }
-
         }
-
     }
 
     /**
      * Reads $length bytes from the filename
-     * @param int $length
+     *
      * @throws LogicException
      * @throws RuntimeException
-     * @return string
      */
-    protected function read($length)
+    protected function read(int $length): string
     {
-        if (!is_int($length) || $length < 1) {
+        if ($length < 1) {
             throw new LogicException('Argument must be positive integer', self::E_PARAMETER);
         }
 
-        if (!$data = @fread($this->fileHandle, $length)) {
+        $data = fread($this->fileHandle, $length);
+
+        if ($data === false) {
             throw new RuntimeException('Cannot not read from filename', self::E_FILE_READ);
         }
 
         return $data;
     }
-
-    /**
-     * @return string
-     */
-    public function getFilename()
-    {
-        return $this->filename;
-    }
-
-    /**
-     * @return int
-     */
-    public function getFileSize()
-    {
-        return $this->fileSize;
-    }
-
-    /**
-     * @return array
-     */
-    public function getMetadataBlockCounts()
-    {
-        return $this->metadataBlockCounts;
-    }
-
-    /**
-     * @return int
-     */
-    public function getStreamBlockSizeMin()
-    {
-        return $this->streamBlockSizeMin;
-    }
-
-    /**
-     * @return int
-     */
-    public function getStreamBlockSizeMax()
-    {
-        return $this->streamBlockSizeMax;
-    }
-
-    /**
-     * @return int
-     */
-    public function getStreamFrameSizeMin()
-    {
-        return $this->streamFrameSizeMin;
-    }
-
-    /**
-     * @return int
-     */
-    public function getStreamFrameSizeMax()
-    {
-        return $this->streamFrameSizeMax;
-    }
-
-    /**
-     * @return int
-     */
-    public function getSampleRate()
-    {
-        return $this->sampleRate;
-    }
-
-    /**
-     * @return int
-     */
-    public function getChannels()
-    {
-        return $this->channels;
-    }
-
-    /**
-     * @return int
-     */
-    public function getBitsPerSample()
-    {
-        return $this->bitsPerSample;
-    }
-
-    /**
-     * @return int
-     */
-    public function getTotalSamples()
-    {
-        return $this->totalSamples;
-    }
-
-    /**
-     * Audio length in seconds
-     * @return float
-     */
-    public function getDuration()
-    {
-        return $this->duration;
-    }
-
-    /**
-     * @return string
-     */
-    public function getAudioMd5()
-    {
-        return $this->audioMd5;
-    }
-
-    /**
-     * @return array
-     */
-    public function getVorbisComment()
-    {
-        return $this->vorbisComment;
-    }
-
 }

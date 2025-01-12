@@ -5,6 +5,8 @@ on:
     branches: ["master"]
   pull_request:
     branches: ["master"]
+  schedule:
+    - cron: "0 6 * * 3"
   workflow_dispatch:
 
 permissions:
@@ -15,16 +17,41 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        php: ["latest", "8.1", "7.4"]
+        php: ["7.4", "8.1", "8.2", "8.3", "8.4"]
 
     runs-on: ${{ matrix.os }}
     name: Test on ${{ matrix.os }}, PHP ${{ matrix.php }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-versions }}
+          coverage: pcov
+
+      - name: Composer
       - uses: php-actions/composer@v6
 
-      - name: PHPUnit tests
-        uses: php-actions/phpunit@v4
+      - name: Code style checks
+        run: ./vendor/bin/phpcs
+
+      - name: PHPStan code analysis
+        run: php vendor/bin/phpstan analyze
+
+      - name: PHPinsights code analysis
+        run: php vendor/bin/phpinsights analyse --no-interaction
+
+      - name: Execute Rector
+        run: vendor/bin/rector --dry-run
+
+      - name: Unit tests
+        run: ./vendor/bin/phpunit --coverage-clover=coverage.xml
+
+      - name: Send code coverage report to Codecov.io
+        uses: codecov/codecov-action@v4
         with:
-          php_version: ${{ matrix.php }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
