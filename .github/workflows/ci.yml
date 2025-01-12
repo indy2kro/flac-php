@@ -15,6 +15,7 @@ permissions:
 jobs:
   test:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         php: ["7.4", "8.1", "8.2", "8.3", "8.4"]
@@ -23,35 +24,35 @@ jobs:
     name: Test on ${{ matrix.os }}, PHP ${{ matrix.php }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php-versions }}
-          coverage: pcov
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php-versions }}
+        coverage: pcov
 
-      - name: Composer
-      - uses: php-actions/composer@v6
+    - name: Composer
+    - uses: php-actions/composer@v6
 
-      - name: Code style checks
-        run: ./vendor/bin/phpcs
+    - name: Code style checks
+      run: ./vendor/bin/phpcs
 
-      - name: PHPStan code analysis
-        run: php vendor/bin/phpstan analyze
+    - name: PHPStan code analysis
+      run: php vendor/bin/phpstan analyze
 
-      - name: PHPinsights code analysis
-        run: php vendor/bin/phpinsights analyse --no-interaction
+    - name: PHPinsights code analysis
+      run: php vendor/bin/phpinsights analyse --no-interaction
 
-      - name: Execute Rector
-        run: vendor/bin/rector --dry-run
+    - name: Execute Rector
+      run: vendor/bin/rector --dry-run
 
-      - name: Unit tests
-        run: ./vendor/bin/phpunit --coverage-clover=coverage.xml
+    - name: Unit tests
+      run: ./vendor/bin/phpunit --coverage-clover=coverage.xml
 
-      - name: Send code coverage report to Codecov.io
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.xml
+    - name: Send code coverage report to Codecov.io
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: coverage.xml
